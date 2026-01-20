@@ -8,6 +8,7 @@ import { MatchingTable } from '@/components/MatchingTable';
 import { MarginCalculator } from '@/components/MarginCalculator';
 import { RDInsights } from '@/components/RDInsights';
 import { Activity, Factory, TrendingUp, Beaker } from 'lucide-react';
+import { runResearchAction } from '@/app/actions/research';
 
 // Factory data from factory_specs.csv
 const machines: Machine[] = [
@@ -28,12 +29,34 @@ const stats = [
     { label: 'R&D проектов', value: 3, icon: Beaker, color: 'text-purple-400' },
 ];
 
+const SEARCH_QUERIES = [
+    "supply of chemical reactors tenders Kazakhstan 2025",
+    "laboratory furniture procurement tenders Uzbekistan",
+    "stainless steel tanks tenders Russia 2025",
+    "CVD coating equipment demand Central Asia",
+    "industrial welding equipment tenders Kazakhstan",
+    "laboratory glassware tenders Kyrgyzstan",
+    "sapfir reactor components tenders"
+];
+
 export default function DashboardPage() {
     const [isScanning, setIsScanning] = useState(false);
 
-    const handleScan = () => {
+    const handleScan = async () => {
+        if (isScanning) return;
         setIsScanning(true);
-        setTimeout(() => setIsScanning(false), 3000);
+
+        // Запуск реального поиска
+        try {
+            const randomQuery = SEARCH_QUERIES[Math.floor(Math.random() * SEARCH_QUERIES.length)];
+            console.log("Scanning for:", randomQuery);
+            await runResearchAction(randomQuery);
+        } catch (e) {
+            console.error(e);
+        } finally {
+            // Искусственная задержка для восприятия процесса, если поиск прошел слишком быстро
+            setTimeout(() => setIsScanning(false), 2000);
+        }
     };
 
     const idleMachines = machines.filter(m => m.Status.includes('IDLE'));
