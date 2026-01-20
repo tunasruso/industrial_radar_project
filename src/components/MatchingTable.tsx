@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Target, Filter, ArrowUpDown } from 'lucide-react';
+import { Target, Filter, ArrowUpDown, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 
@@ -15,6 +15,14 @@ interface MatchingItem {
     material: string;
 }
 
+interface ResearchReport {
+    id: number;
+    title: string;
+    url: string;
+    content: string;
+    created_at: string;
+}
+
 const materials = ['Все', '316L', '12Х18Н10Т', 'Латунь', 'Алюминий'];
 
 export function MatchingTable() {
@@ -22,6 +30,9 @@ export function MatchingTable() {
     const [filter, setFilter] = useState('Все');
     const [sortBy, setSortBy] = useState<'score' | 'cost'>('score');
     const [isLoading, setIsLoading] = useState(true);
+
+    // Modal state
+    const [selectedReport, setSelectedReport] = useState<ResearchReport | null>(null);
 
     const fetchMatches = async () => {
         setIsLoading(true);
@@ -38,7 +49,6 @@ export function MatchingTable() {
     useEffect(() => {
         fetchMatches();
 
-        // Подписка на обновления (Realtime)
         const channel = supabase
             .channel('matching_updates')
             .on(
@@ -55,6 +65,24 @@ export function MatchingTable() {
         };
     }, []);
 
+    const handleRowClick = async (item: MatchingItem) => {
+        // Пытаемся найти отчет в research_reports по названию
+        const { data } = await supabase
+            .from('research_reports')
+            .select('*')
+            .ilike('title', `%${item.product_name.slice(0, 50)}%`) // Ищем частичное совпадение
+            .limit(1)
+            .single();
+
+        if (data) {
+            setSelectedReport(data);
+        } else {
+            console.log("No detailed report found for", item.product_name);
+            // Можно показать тост уведомление, но пока просто ничего не делаем или алерт
+            // alert("Детали не найдены для этого элемента");
+        }
+    };
+
     const filteredData = matches
         .filter(item => filter === 'Все' || (item.material && item.material.includes(filter)))
         .sort((a, b) => sortBy === 'score'
@@ -63,7 +91,7 @@ export function MatchingTable() {
         );
 
     return (
-        <div className="h-full flex flex-col">
+        <div className="h-full flex flex-col relative">
             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                     <Target className="w-5 h-5 text-cyan-400" />
@@ -119,15 +147,16 @@ export function MatchingTable() {
                                 filteredData.map((item, idx) => (
                                     <motion.tr
                                         key={item.id || idx}
+                                        onClick={() => handleRowClick(item)}
                                         initial={{ opacity: 0, x: -10 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         exit={{ opacity: 0, x: 10 }}
                                         transition={{ delay: idx * 0.05 }}
-                                        className="border-b border-white/5 hover:bg-white/[0.02] cursor-pointer"
+                                        className="border-b border-white/5 hover:bg-white/[0.02] cursor-pointer group"
                                     >
-                                        <td className="py-3 px-3 font-mono text-cyan-400 text-xs">{item.article}</td>
+                                        <td className="py-3 px-3 font-mono text-cyan-400 text-xs group-hover:underline decoration-dashed decoration-cyan-400/50 underline-offset-4">{item.article}</td>
                                         <td className="py-3 px-3">
-                                            <div className="text-white truncate max-w-[200px]" title={item.product_name}>{item.product_name}</div>
+                                            <div className="text-white truncate max-w-[200px] group-hover:text-cyan-200 transition-colors" title={item.product_name}>{item.product_name}</div>
                                             <div className="text-xs text-white/40">{item.category} • {item.material}</div>
                                         </td>
                                         <td className="py-3 px-3 text-center">
@@ -153,6 +182,56 @@ export function MatchingTable() {
                     </tbody>
                 </table>
             </div>
+
+            {/* Detail Modal */}
+            <AnimatePresence>
+                {selectedReport && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+                        onClick={() => setSelectedReport(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            onClick={(e) => e.stopPropagation()}
+                            className="bg-[#0F161E] w-full h-[90%] rounded-xl border border-white/20 shadow-2xl overflow-hidden flex flex-col"
+                        >
+                            <div className="p-4 border-b border-white/10 bg-[#151b24] flex justify-between items-start">
+                                <div>
+                                    <h3 className="text-md font-bold text-white mb-1 line-clamp-1 pr-4">{selectedReport.title}</h3>
+                                    <a
+                                        href={selectedReport.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-cyan-400 hover:underline flex items-center gap-1"
+                                    >
+                                        Открыть источник <ExternalLink className="w-3 h-3" />
+                                    </a>
+                                </div>
+                                <button onClick={() => setSelectedReport(null)} className="text-white/50 hover:text-white">✕</button>
+                            </div>
+
+                            <div className="p-4 overflow-y-auto custom-scrollbar flex-1 bg-[#0F161E]">
+                                <div className="prose prose-invert prose-xs max-w-none">
+                                    <div className="bg-white/5 p-3 rounded-lg mb-4 border border-white/10">
+                                        <h4 className="text-white font-semibold mb-1 mt-0 text-xs uppercase opacity-70">Вердикт AI</h4>
+                                        <div className="text-white/90 font-mono text-xs">
+                                            {selectedReport.content.split('---').pop()?.trim()}
+                                        </div>
+                                    </div>
+                                    <div className="text-white/70 whitespace-pre-wrap text-sm">
+                                        {selectedReport.content.replace(/#{1,6}\s/g, '').split('---')[0]}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }
