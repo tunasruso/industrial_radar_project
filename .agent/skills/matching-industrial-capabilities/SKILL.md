@@ -1,9 +1,9 @@
 ---
 name: matching-industrial-capabilities
-description: Analyzes manufacturing capacity against market demand. Performs technical matching for import substitution (Bürkle/Hamilton) and optimizes load for idle machines like Lasermann LSS 1325. Calculates costs at a 1000 RUB/h rate.
+description: Analyzes manufacturing capacity for Laboratory Technologies (laboff.ru). Performs technical matching for labware import substitution and optimizes capacity for high-precision industrial equipment.
 ---
 
-# Matching Industrial Capabilities
+# Industrial Radar: Laboratory Technologies Skill
 
 ## When to use this skill
 - To find which items from `buerkle_catalogue_2024_full.csv` can be produced in-house.

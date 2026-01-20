@@ -1,0 +1,18 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model MatchResult {
+  id              Int      @id @default(autoincrement())
+  article         String
+  productName     String
+  confidenceScore Int
+  estimatedCost   Float
+  category        String
+  material        String
+  createdAt       DateTime @default(now())
+}
