@@ -90,20 +90,33 @@ export async function runResearchAction(query: string) {
         // 5. [NEW] Генерация записи в Matching Results
         // Если оценка высокая, добавляем "найденный" продукт в фид
         if (analysis.score >= 60) {
-            const article = `TND-${Math.floor(Math.random() * 1000)}`;
-            const price = Math.floor(Math.random() * 500000) + 50000;
+            const productName = results[0].title.slice(0, 100);
 
-            await supabase
+            // Проверка на дубликаты
+            const { data: existingMatch } = await supabase
                 .from('matching_results')
-                .insert({
-                    article: article,
-                    product_name: results[0].title.slice(0, 100), // Обрезаем если слишком длинное
-                    confidence_score: analysis.score,
-                    estimated_cost: price, // Фейковая цена для примера
-                    category: 'Tender / R&D',
-                    material: 'Unknown'
-                });
-            console.log("Added to matching_results");
+                .select('id')
+                .eq('product_name', productName)
+                .single();
+
+            if (!existingMatch) {
+                const article = `TND-${Math.floor(Math.random() * 1000)}`;
+                const price = Math.floor(Math.random() * 500000) + 50000;
+
+                await supabase
+                    .from('matching_results')
+                    .insert({
+                        article: article,
+                        product_name: productName,
+                        confidence_score: analysis.score,
+                        estimated_cost: price, // Фейковая цена для примера
+                        category: 'Tender / R&D',
+                        material: 'Unknown'
+                    });
+                console.log("Added to matching_results");
+            } else {
+                console.log("Skipping duplicate matching result for:", productName);
+            }
         }
 
         return { success: true, resultsCount: results.length };
