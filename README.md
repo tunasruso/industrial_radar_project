@@ -1,36 +1,70 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🏭 Industrial Radar (Industrial R&D Dashboard)
 
-## Getting Started
+**Industrial Radar** — это интеллектуальная система для анализа промышленных тендеров, поиска товаров-аналогов и оценки возможности их производства на собственных мощностях.
 
-First, run the development server:
+Система выступает мостом между **R&D отделом** (поиск чертежей, спецификаций, анализ рынка) и **Производством** (оценка мощностей, маржинальности).
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+---
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🚀 Основные возможности
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 1. 🌍 Глобальный поиск (R&D Research)
+-   **Автономный агент** (на базе Tavily API) сканирует открытые источники (тендерные площадки, каталоги производителей, Alibaba, Made-in-China).
+-   **Два режима работы**:
+    -   🔍 **Tender Mode**: Поиск актуальных закупок и тендеров на оборудование.
+    -   📦 **Catalog Mode**: Сканирование каталогов конкурентов (Bürkle, IKA, Thermo Fisher) для подбора аналогов.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 2. 🧠 Умный Матчинг (Decision Engine)
+-   Автоматический анализ найденных спецификаций.
+-   **Feasibility Check**: Эвристический анализ текста на наличие сложных материалов (титан, тантал, эмаль) или требований (высокое давление).
+-   **Scoring**: Присвоение `Confidence Score` (0-100%) — насколько заявка подходит под наши производственные возможности.
+-   **Идемпотентность**: Защита от дублей — система помнит, что уже находила.
 
-## Learn More
+### 3. 📊 Dashboard & Feed
+-   **Real-time Matching Feed**: Лента "горячих" лидов, обновляемая в реальном времени (Supabase Realtime).
+-   **Drill-down**: Клик по любой позиции открывает детальный отчет с исходными данными, ссылками на первоисточник и вердиктом AI.
+-   **Визуализация**: Цветовая индикация (Зеленый - подходит, Желтый - требует проверки).
 
-To learn more about Next.js, take a look at the following resources:
+### 4. 🗄️ Архив и Экспорт
+-   Хранение истории всех поисковых запросов и отчетов.
+-   Разделение на "Тендеры" и "Каталог".
+-   📥 **Excel Export**: Выгрузка данных для офлайн-анализа и передачи технологам.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🛠 Технологический стек
 
-## Deploy on Vercel
+-   **Frontend**: Next.js 15 (App Router), React 19, Tailwind CSS v4.
+-   **UI/UX**: Framer Motion (анимации), Lucide React (иконки), Glassmorphism дизайн.
+-   **Backend / Database**: Supabase (PostgreSQL) + Row Level Security.
+-   **Realtime**: Supabase Realtime Subscriptions.
+-   **AI / Search**: Tavily Search API (для глубокого поиска по вебу).
+-   **Deployment**: Vercel.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📂 Структура проекта
+
+-   `/src/app/dashboard` — Основной интерфейс (Лента, Графики).
+-   `/src/app/actions` — Server Actions (логика поиска и анализа).
+-   `/src/components` — UI компоненты (`MatchingTable`, `RDInsights`, `Header`).
+-   `/directives` — Промпты и инструкции для AI-агентов.
+
+---
+
+## ⚡️ Как запустить
+
+1.  Установить зависимости:
+    ```bash
+    npm install
+    ```
+2.  Настроить `.env.local`:
+    ```env
+    NEXT_PUBLIC_SUPABASE_URL=...
+    NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+    TAVILY_API_KEY=...
+    ```
+3.  Запустить dev-сервер:
+    ```bash
+    npm run dev
+    ```
