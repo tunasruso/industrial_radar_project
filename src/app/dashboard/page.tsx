@@ -29,7 +29,7 @@ const stats = [
     { label: 'R&D проектов', value: 3, icon: Beaker, color: 'text-purple-400' },
 ];
 
-const SEARCH_QUERIES = [
+const TENDER_QUERIES = [
     "supply of chemical reactors tenders Kazakhstan 2025",
     "laboratory furniture procurement tenders Uzbekistan",
     "stainless steel tanks tenders Russia 2025",
@@ -39,22 +39,33 @@ const SEARCH_QUERIES = [
     "sapfir reactor components tenders"
 ];
 
+const CATALOG_QUERIES = [
+    "Bürkle sampling systems catalog specifications",
+    "Thermo Fisher Scientific laboratory reactors catalog",
+    "IKA laboratory mixers and stirrers specifications",
+    "Bürkle pumps manual pdf",
+    "laboratory stainless steel fittings catalog",
+    "industrial autoclave specifications 50L 100L",
+    "Bürkle Zone Sampler manual"
+];
+
 export default function DashboardPage() {
     const [isScanning, setIsScanning] = useState(false);
 
-    const handleScan = async () => {
+    const handleScan = async (mode: 'tender' | 'catalog') => {
         if (isScanning) return;
         setIsScanning(true);
 
-        // Запуск реального поиска
         try {
-            const randomQuery = SEARCH_QUERIES[Math.floor(Math.random() * SEARCH_QUERIES.length)];
-            console.log("Scanning for:", randomQuery);
+            const queries = mode === 'tender' ? TENDER_QUERIES : CATALOG_QUERIES;
+            // Выбираем случайный запрос из соответствующей категории
+            const randomQuery = queries[Math.floor(Math.random() * queries.length)];
+
+            console.log(`Scanning in ${mode} mode for:`, randomQuery);
             await runResearchAction(randomQuery);
         } catch (e) {
             console.error(e);
         } finally {
-            // Искусственная задержка для восприятия процесса, если поиск прошел слишком быстро
             setTimeout(() => setIsScanning(false), 2000);
         }
     };
