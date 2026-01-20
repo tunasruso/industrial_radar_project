@@ -66,20 +66,22 @@ export function MatchingTable() {
     }, []);
 
     const handleRowClick = async (item: MatchingItem) => {
-        // Пытаемся найти отчет в research_reports по названию
+        // Очищаем строку поиска от спецсимволов, которые могут ломать ilike
+        const cleanName = item.product_name.replace(/[^\w\sа-яА-ЯёЁ.-]/gi, ' ').trim();
+        const searchTerm = cleanName.slice(0, 30); // Берем первые 30 чистых символов для надежности
+
         const { data } = await supabase
             .from('research_reports')
             .select('*')
-            .ilike('title', `%${item.product_name.slice(0, 50)}%`) // Ищем частичное совпадение
+            .ilike('title', `%${searchTerm}%`)
             .limit(1)
             .single();
 
         if (data) {
             setSelectedReport(data);
         } else {
-            console.log("No detailed report found for", item.product_name);
-            // Можно показать тост уведомление, но пока просто ничего не делаем или алерт
-            // alert("Детали не найдены для этого элемента");
+            // Явное уведомление для пользователя
+            alert(`Отчет для "${item.product_name.slice(0, 20)}..." не найден в базе R&D.\n\nВозможно, это старая запись или название слишком отличается.`);
         }
     };
 
