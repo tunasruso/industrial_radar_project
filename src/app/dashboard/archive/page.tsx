@@ -248,7 +248,27 @@ export default function ArchivePage() {
 
                                     <h4 className="text-white/60 uppercase text-xs font-bold tracking-wider mb-4">Полный отчет</h4>
                                     <div className="text-white/70 whitespace-pre-wrap leading-relaxed">
-                                        {selectedReport.content.replace(/#{1,6}\s/g, '').split('---')[0]} {/* Simple cleanup */}
+                                        {(() => {
+                                            const content = selectedReport.content.replace(/#{1,6}\s/g, '').split('---')[0];
+                                            const parts = content.split(/(\[[^\]]+\]\([^)]+\))/g);
+                                            return parts.map((part, i) => {
+                                                const match = part.match(/^\[([^\]]+)\]\(([^)]+)\)$/);
+                                                if (match) {
+                                                    return (
+                                                        <a
+                                                            key={i}
+                                                            href={match[2]}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-cyan-400 hover:underline break-all font-medium inline-flex items-center gap-1"
+                                                        >
+                                                            {match[1]} <ExternalLink className="w-3 h-3 inline" />
+                                                        </a>
+                                                    );
+                                                }
+                                                return <span key={i}>{part}</span>;
+                                            });
+                                        })()}
                                     </div>
                                 </div>
                             </div>
