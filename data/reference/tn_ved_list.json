@@ -1,0 +1,87 @@
+{
+    "project": "Industrial Radar",
+    "company": "LiderTeks",
+    "version": "2.0",
+    "codes": [
+        {
+            "code": "7017900000",
+            "category": "Labware",
+            "description": "Посуда лабораторная, стеклянная (включая микрошприцы и изделия из стекла)"
+        },
+        {
+            "code": "9027809100",
+            "category": "Instruments",
+            "description": "Приборы и аппаратура для физического или химического анализа"
+        },
+        {
+            "code": "8481807399",
+            "category": "Valves",
+            "description": "Запорная арматура, вентили и клапаны из стали (аналоги Swagelok/Bürkle)"
+        },
+        {
+            "code": "8481809907",
+            "category": "Valves",
+            "description": "Прочие краны, клапаны и вентили"
+        },
+        {
+            "code": "7613000000",
+            "category": "Containers",
+            "description": "Емкости алюминиевые для сжатого или сжиженного газа"
+        },
+        {
+            "code": "7311009100",
+            "category": "Containers",
+            "description": "Емкости из черных металлов для сжатого газа (бесшовные)"
+        },
+        {
+            "code": "7311003000",
+            "category": "Containers",
+            "description": "Сосуды под давлением для сжатого или сжиженного газа"
+        },
+        {
+            "code": "7310299000",
+            "category": "Containers",
+            "description": "Цистерны, бочки, барабаны, канистры и ящики (для пробоотборников)"
+        },
+        {
+            "code": "7616999008",
+            "category": "Aluminium_Parts",
+            "description": "Прочие изделия из алюминия (для раскроя на Lasermann)"
+        },
+        {
+            "code": "7326909807",
+            "category": "Steel_Parts",
+            "description": "Прочие изделия из черных металлов (метизы, детали по чертежам)"
+        },
+        {
+            "code": "7409190000",
+            "category": "Copper_Parts",
+            "description": "Плиты, листы и полосы медные (для медных пластин ПР)"
+        },
+        {
+            "code": "7315890000",
+            "category": "Safety",
+            "description": "Цепи из черных металлов (включая латунированные и искробезопасные)"
+        },
+        {
+            "code": "3910000008",
+            "category": "Silicones",
+            "description": "Силиконы в первичных формах (для кремниевого покрытия)"
+        },
+        {
+            "code": "4016930005",
+            "category": "Seals",
+            "description": "Прокладки, шайбы и уплотнения из резины (ЗИП для пробоотборников)"
+        },
+        {
+            "code": "9026208000",
+            "category": "Measurement",
+            "description": "Манометры и приборы для измерения давления"
+        },
+        {
+            "code": "4421999900",
+            "category": "Wood_Processing",
+            "description": "Прочие изделия из дерева (для загрузки Lasermann LSS 1325)"
+        }
+    ]
+}

@@ -1,0 +1,16 @@
+Machine_Name,Type,Materials,Max_Pressure_MPa,Hourly_Rate_RUB,Status
+Lasermann LSS 1325,Laser_Cutter,"Steel, Aluminum, Wood, Acrylic, Rubber, Fabric",0,1000,IDLE_PRIORITY
+UVGS-TFS-3008 (U07),Engraver/CNC,"Metal, Polymers, Wood",0,1000,IDLE_PRIORITY
+Laser Marker (U19),Engraver,"Metal, Polymers",0,1000,IDLE_PRIORITY
+DM-12NT-CVD-150 (U18),Electric_Oven,"Glass, Metal",0,1000,IDLE_PRIORITY
+Laser Welding (U02),Welder,Stainless Steel,15,1000,IDLE_NO_STAFF
+Silicon Coating Unit,Coating,"Labware, Metal",15,1000,ACTIVE
+Universal Milling (U03/U12/U14/U15),Milling,"316L, 12X18H10T, Aluminum, Brass",15,1000,ACTIVE
+Lathes (U09/U10/U17),Turning,"316L, 12X18H10T, Aluminum, Brass",15,1000,ACTIVE
+Band Saw (U04/U11),Cutting,"Metal Profile, Tube",0,1000,ACTIVE
+Surface Grinder (U05),Grinding,Metal,0,1000,ACTIVE
+Sheet Metal Tool (U06),Sheet_Metal,"Steel, Aluminum",0,1000,ACTIVE
+Drilling Machines (U13/U21/U22),Drilling,Metal,0,1000,ACTIVE
+Hydraulic Press (U20),Press,Metal,0,1000,ACTIVE
+Induction Heater (U01),Induction,Metal,0,1000,ACTIVE
+Almaty FD-4 (U16),Special_Machinery,Metal,0,1000,ACTIVE

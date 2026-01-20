@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Environment variables (ВАЖНО: содержит API ключи!)
+.env
+.env.local
+
+# Temporary files
+.tmp/
+*.tmp
+.DS_Store
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Output files (генерируются скриптами)
+# data/output/ - оставляем, но можно добавить конкретные файлы при необходимости
+
+# Logs
+*.log
