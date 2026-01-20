@@ -3,9 +3,10 @@
 import { useState, useEffect } from 'react';
 import { supabase, MatchResult } from '@/lib/supabase';
 import { Header } from '@/components/Header';
-import { FileDown, Calendar, Database, Search, FileText, ChevronRight } from 'lucide-react';
+import { FileDown, Calendar, Database, Search, FileText, ChevronRight, ArrowLeft, ExternalLink, FileSpreadsheet } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import * as XLSX from 'xlsx';
+import Link from 'next/link';
 
 interface ResearchReport {
     id: number;
@@ -95,7 +96,7 @@ export default function ArchivePage() {
                     </div>
 
                     <button
-                        onClick={exportToExcel}
+                        onClick={handleExport}
                         className="flex items-center gap-2 px-4 py-2 bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 rounded-lg transition-all"
                     >
                         <FileSpreadsheet className="w-4 h-4" />
