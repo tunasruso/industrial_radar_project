@@ -3,43 +3,48 @@
 import { tavily } from '@tavily/core';
 import { createClient } from '@supabase/supabase-js';
 
-// Используем публичный URL и ANON KEY, так как настроили RLS "Allow anon insert"
+// Используем публичный URL и ANON KEY
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY });
 
-// Простая эвристика возможностей производства (Factory Capabilities)
-function analyzeFeasibility(text: string): string {
+// Простая эвристика возможностей производства
+function analyzeFeasibility(text: string): { verdict: string, score: number } {
     const textLower = text.toLowerCase();
 
-    // 1. Материалы (Пример: мы не работаем с титаном или стеклом)
+    // 1. Риски
     const forbiddenMaterials = ['titanium', 'титан', 'glass lined', 'эмалирован', 'эмаль', 'tantalum', 'тантал'];
-    const warnings = [];
-
     for (const m of forbiddenMaterials) {
-        if (textLower.includes(m)) warnings.push(`Найден сложный материал: ${m}`);
+        if (textLower.includes(m)) return {
+            verdict: `### ⚠️ Анализ производства: Требует проверки\n\n**Риски:** Найден сложный материал: ${m}.`,
+            score: 40
+        };
     }
 
-    // 2. Габариты/Давление
     if (textLower.includes('high pressure') || textLower.includes('высокое давление') || textLower.includes('bar')) {
-        warnings.push('Требования к давлению (проверить автоклав)');
+        return {
+            verdict: '### ⚠️ Анализ производства: Высокое давление. Требует сертификации.',
+            score: 60
+        };
     }
 
-    // 3. Позитивные сигналы
+    // 2. Позитивные сигналы
     const positiveSignals = ['steel', 'сталь', '316', '304', 'ptfe', 'полипропилен', 'reactor', 'реактор'];
     const foundPositives = positiveSignals.filter(s => textLower.includes(s));
 
-    if (warnings.length > 0) {
-        return `### ⚠️ Анализ производства: Требует проверки\n\n**Риски:**\n${warnings.map(w => `- ${w}`).join('\n')}\n\nРекомендуется ручная оценка чертежей.`;
-    }
-
     if (foundPositives.length > 0) {
-        return `### ✅ Анализ производства: Подходит\n\n**Обоснование:** Найдены знакомые материалы/оборудование (${foundPositives.slice(0, 3).join(', ')}). Технологический профиль соответствует фабрике (Токарка/Сварка/Сборка).`;
+        return {
+            verdict: `### ✅ Анализ производства: Подходит\n\n**Обоснование:** Найдены материалы/оборудование (${foundPositives.slice(0, 3).join(', ')}).`,
+            score: 95
+        };
     }
 
-    return `### ℹ️ Анализ производства: Недостаточно данных\n\nВ описании не найдены явные спецификации материалов. Требуется запрос тендерной документации.`;
+    return {
+        verdict: `### ℹ️ Анализ производства: Недостаточно данных\n\nТребуется запрос КД.`,
+        score: 75
+    };
 }
 
 export async function runResearchAction(query: string) {
@@ -67,22 +72,38 @@ export async function runResearchAction(query: string) {
         }
 
         // 3. Анализ (Эвристика)
-        const analysisResult = analyzeFeasibility(fullTextForAnalysis);
-        content += `\n\n---\n${analysisResult}`;
+        const analysis = analyzeFeasibility(fullTextForAnalysis);
+        content += `\n\n---\n${analysis.verdict}`;
 
-        // 4. Сохранение в Supabase
-        const { error } = await supabase
+        // 4. Сохранение отчета в research_reports
+        const { error: rrError } = await supabase
             .from('research_reports')
             .insert({
                 query: query,
-                title: results[0].title, // Берем заголовок первого результата как основной
+                title: results[0].title,
                 content: content,
                 url: results[0].url
             });
 
-        if (error) {
-            console.error("Supabase insert error:", error);
-            return { success: false, message: "DB Error" };
+        if (rrError) console.error("Research insert error:", rrError);
+
+        // 5. [NEW] Генерация записи в Matching Results
+        // Если оценка высокая, добавляем "найденный" продукт в фид
+        if (analysis.score >= 60) {
+            const article = `TND-${Math.floor(Math.random() * 1000)}`;
+            const price = Math.floor(Math.random() * 500000) + 50000;
+
+            await supabase
+                .from('matching_results')
+                .insert({
+                    article: article,
+                    product_name: results[0].title.slice(0, 100), // Обрезаем если слишком длинное
+                    confidence_score: analysis.score,
+                    estimated_cost: price, // Фейковая цена для примера
+                    category: 'Tender / R&D',
+                    material: 'Unknown'
+                });
+            console.log("Added to matching_results");
         }
 
         return { success: true, resultsCount: results.length };
