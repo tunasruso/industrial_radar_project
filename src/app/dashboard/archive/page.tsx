@@ -11,10 +11,6 @@ export default function ArchivePage() {
     const [data, setData] = useState<MatchResult[]>([]);
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        fetchData();
-    }, []);
-
     const fetchData = async () => {
         setLoading(true);
         const { data: results, error } = await supabase
@@ -26,6 +22,10 @@ export default function ArchivePage() {
         else setData(results || []);
         setLoading(false);
     };
+
+    useEffect(() => {
+        fetchData();
+    }, []);
 
     const handleExport = () => {
         const worksheet = XLSX.utils.json_to_sheet(data);

@@ -67,7 +67,7 @@ export function RDInsights() {
 
             <div className="space-y-3 min-h-[100px]">
                 {reports.length === 0 && !isLoading && (
-                    <div className="text-center text-white/30 text-xs py-4">Нет отчетов. Нажмите "Запустить поиск"</div>
+                    <div className="text-center text-white/30 text-xs py-4">Нет отчетов. Нажмите &quot;Запустить поиск&quot;</div>
                 )}
 
                 {reports.map((item) => {

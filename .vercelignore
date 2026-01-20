@@ -1,0 +1,10 @@
+.agent
+.git
+.DS_Store
+data
+execution
+directives
+system.md
+Agents.md
+TODO.md
+.tmp
