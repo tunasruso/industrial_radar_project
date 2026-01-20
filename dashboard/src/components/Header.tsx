@@ -8,14 +8,24 @@ import { runResearchAction } from '@/app/actions/research'; // Import server act
 import { useState } from 'react';
 
 interface HeaderProps {
-    onScan?: () => void; // Legacy prop (можно удалить при желании)
-    isScanning?: boolean; // Legacy prop
+    /* Legacy props */
+    onScan?: () => void;
+    isScanning?: boolean;
 }
+
+const COUNTRIES = [
+    { code: 'RU', name: 'РФ', text: 'Россия' },
+    { code: 'KZ', name: 'Казахстан', text: 'Казахстан' },
+    { code: 'KG', name: 'Киргизстан', text: 'Киргизстан' },
+    { code: 'BY', name: 'Беларусь', text: 'Беларусь' },
+    { code: 'AM', name: 'Армения', text: 'Армения' },
+];
 
 export function Header({ onScan, isScanning: externalScanning = false }: HeaderProps) {
     const pathname = usePathname();
     const isArchive = pathname === '/dashboard/archive';
     const [internalScanning, setInternalScanning] = useState(false);
+    const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
 
     const isScanning = externalScanning || internalScanning;
 
@@ -23,21 +33,31 @@ export function Header({ onScan, isScanning: externalScanning = false }: HeaderP
         if (isScanning) return;
         setInternalScanning(true);
 
-        // Запускаем два параллельных поиска (эмуляция скрипта)
-        const queries = [
+        // Базовые R&D запросы (глобальные)
+        const baseQueries = [
             "CVD silicon coating stainless steel 316L chemical resistance",
             "Laser welding wire feeder FWS-01A manual instructions stainless steel"
         ];
 
-        for (const q of queries) {
-            await runResearchAction(q);
-        }
+        // Тендерные запросы с учетом выбранной страны
+        const tenderQueries = [
+            `тендеры лабораторное оборудование ${selectedCountry.text} 2024 2025`,
+            `госзакупки реакторы и промышленная мебель ${selectedCountry.text} актуальные`,
+            `supply of chemical reactors tenders ${selectedCountry.text} 2025`,
+        ];
 
-        // Перезагрузка страницы для обновления данных (или можно через router.refresh())
-        // window.location.reload(); 
-        // Лучше просто сбросить состояние, а RDInsights сам обновится (если там поллинг) или пользователь обновит.
-        setInternalScanning(false);
-        if (onScan) onScan(); // Вызываем коллбэк для совместимости или уведомления родителя
+        const allQueries = [...baseQueries, ...tenderQueries];
+
+        try {
+            for (const q of allQueries) {
+                await runResearchAction(q);
+            }
+        } catch (e) {
+            console.error("Search failed", e);
+        } finally {
+            setInternalScanning(false);
+            if (onScan) onScan();
+        }
     };
 
     return (
@@ -60,6 +80,21 @@ export function Header({ onScan, isScanning: externalScanning = false }: HeaderP
 
                 {/* Navigation & Actions */}
                 <div className="flex items-center gap-4">
+
+                    {/* Country Selector */}
+                    <div className="flex items-center bg-white/5 rounded-xl px-3 border border-white/10">
+                        <span className="text-lg mr-2">🌍</span>
+                        <select
+                            value={selectedCountry.code}
+                            onChange={(e) => setSelectedCountry(COUNTRIES.find(c => c.code === e.target.value) || COUNTRIES[0])}
+                            className="bg-transparent text-white text-sm py-2 outline-none cursor-pointer [&>option]:bg-[#0f172a]"
+                        >
+                            {COUNTRIES.map(c => (
+                                <option key={c.code} value={c.code}>{c.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
                     <Link
                         href={isArchive ? '/dashboard' : '/dashboard/archive'}
                         className={`
@@ -90,7 +125,7 @@ export function Header({ onScan, isScanning: externalScanning = false }: HeaderP
               `}
                         >
                             {isScanning ? <Loader2 className="w-5 h-5 animate-spin" /> : <PlayCircle className="w-5 h-5" />}
-                            {isScanning ? 'Ищем данные...' : 'Запустить поиск'}
+                            {isScanning ? 'Ищем тендеры...' : 'Поиск + Тендеры'}
                         </motion.button>
                     )}
 
