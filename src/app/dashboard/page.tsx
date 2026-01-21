@@ -56,32 +56,59 @@ interface SearchStatus {
     message?: string;
 }
 
+interface SearchProgress {
+    current: number;
+    total: number;
+}
+
 export default function DashboardPage() {
     const [isScanning, setIsScanning] = useState(false);
     const [searchStatus, setSearchStatus] = useState<SearchStatus>({ status: 'idle' });
+    const [searchProgress, setSearchProgress] = useState<SearchProgress | undefined>(undefined);
 
-    const handleScan = async (mode: 'tender' | 'catalog') => {
+    const handleScan = async (mode: 'tender' | 'catalog', count: number) => {
         if (isScanning) return;
         setIsScanning(true);
+        setSearchProgress({ current: 0, total: count });
 
         const queries = mode === 'tender' ? TENDER_QUERIES : CATALOG_QUERIES;
-        const randomQuery = queries[Math.floor(Math.random() * queries.length)];
-
-        setSearchStatus({ status: 'searching', query: randomQuery });
-        console.log(`Scanning in ${mode} mode for:`, randomQuery);
+        let totalNewResults = 0;
+        let completedSearches = 0;
 
         try {
-            const result = await runResearchAction(randomQuery);
-            if (result.success) {
-                setSearchStatus({ status: 'success', query: randomQuery, message: `Найдено ${result.resultsCount} результатов` });
-            } else {
-                setSearchStatus({ status: 'error', query: randomQuery, message: result.message || 'Ошибка поиска' });
+            for (let i = 0; i < count; i++) {
+                const randomQuery = queries[Math.floor(Math.random() * queries.length)];
+                setSearchProgress({ current: i + 1, total: count });
+                setSearchStatus({ status: 'searching', query: randomQuery });
+
+                console.log(`Scanning ${i + 1}/${count}: ${randomQuery}`);
+
+                try {
+                    const result = await runResearchAction(randomQuery);
+                    if (result.success) {
+                        totalNewResults += result.resultsCount || 0;
+                        completedSearches++;
+                    }
+                } catch (e) {
+                    console.error(`Error on search ${i + 1}:`, e);
+                }
+
+                // Небольшая задержка между запросами
+                if (i < count - 1) {
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
             }
+
+            setSearchStatus({
+                status: 'success',
+                message: `Завершено ${completedSearches}/${count} запросов. Новых результатов: ${totalNewResults}`
+            });
         } catch (e) {
             console.error(e);
-            setSearchStatus({ status: 'error', query: randomQuery, message: 'Внутренняя ошибка' });
+            setSearchStatus({ status: 'error', message: 'Внутренняя ошибка' });
         } finally {
             setIsScanning(false);
+            setSearchProgress(undefined);
             // Автоскрытие через 5 секунд
             setTimeout(() => setSearchStatus({ status: 'idle' }), 5000);
         }
@@ -93,7 +120,7 @@ export default function DashboardPage() {
     return (
         <main className="min-h-screen p-6 relative">
             <div className="max-w-[1600px] mx-auto">
-                <Header onScan={handleScan} isScanning={isScanning} />
+                <Header onScan={handleScan} isScanning={isScanning} currentProgress={searchProgress} />
 
                 {/* Search Status Toast */}
                 <AnimatePresence>
@@ -103,10 +130,10 @@ export default function DashboardPage() {
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
                             className={`fixed top-4 right-4 z-50 p-4 rounded-xl border backdrop-blur-md max-w-md ${searchStatus.status === 'searching'
-                                    ? 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400'
-                                    : searchStatus.status === 'success'
-                                        ? 'bg-green-500/20 border-green-500/30 text-green-400'
-                                        : 'bg-red-500/20 border-red-500/30 text-red-400'
+                                ? 'bg-cyan-500/20 border-cyan-500/30 text-cyan-400'
+                                : searchStatus.status === 'success'
+                                    ? 'bg-green-500/20 border-green-500/30 text-green-400'
+                                    : 'bg-red-500/20 border-red-500/30 text-red-400'
                                 }`}
                         >
                             <div className="flex items-start gap-3">
