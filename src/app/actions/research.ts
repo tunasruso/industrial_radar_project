@@ -89,7 +89,9 @@ export async function runResearchAction(query: string) {
                 const multiplier = aiEvaluation.complexity === 'High' ? 5 : aiEvaluation.complexity === 'Medium' ? 2 : 1;
                 const price = Math.floor(basePrice * multiplier + Math.random() * 20000);
 
-                await supabase
+                console.log("Attempting to insert into matching_results:", productName);
+
+                const { data, error } = await supabase
                     .from('matching_results')
                     .insert({
                         article: article,
@@ -97,9 +99,14 @@ export async function runResearchAction(query: string) {
                         confidence_score: aiEvaluation.score,
                         estimated_cost: price,
                         category: `R&D • ${aiEvaluation.recommended_machine}`,
-                        material: aiEvaluation.reason.slice(0, 50) // Сохраняем часть обоснования как материал/инфо
+                        material: aiEvaluation.reason.slice(0, 50)
                     });
-                console.log("Added to matching_results with AI score:", aiEvaluation.score);
+
+                if (error) {
+                    console.error("❌ Failed to insert into matching_results:", error);
+                } else {
+                    console.log("✅ Added to matching_results with AI score:", aiEvaluation.score);
+                }
             } else {
                 console.log("Skipping duplicate matching result for:", productName);
             }
