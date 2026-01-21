@@ -30,8 +30,26 @@ export function RDInsights() {
         setIsLoading(false);
     };
 
+    const clearTableOnMount = async () => {
+        // Очищаем таблицу отчетов при загрузке
+        console.log("🧹 Clearing research_reports table...");
+        const { error } = await supabase
+            .from('research_reports')
+            .delete()
+            .neq('id', 0); // Удаляет все записи
+
+        if (error) {
+            console.error("Failed to clear research_reports:", error);
+        } else {
+            console.log("✅ Research reports cleared");
+        }
+    };
+
     useEffect(() => {
-        fetchReports();
+        // При первом монтировании очищаем и затем подписываемся
+        clearTableOnMount().then(() => {
+            setReports([]); // Сбрасываем локальный стейт
+        });
 
         // Подписка на обновления (Realtime)
         const channel = supabase
