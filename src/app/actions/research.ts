@@ -29,21 +29,19 @@ export async function runResearchAction(query: string) {
             return { success: false, message: "No results found" };
         }
 
-        // 2. IDEMPOTENCY CHECK: Фильтруем результаты, которые уже есть в архиве
-        const urls = results.map(r => r.url);
-        const { data: existingReports } = await supabase
-            .from('research_reports')
-            .select('url')
-            .in('url', urls);
+        // 2. IDEMPOTENCY CHECK: Временно отключено для отладки
+        // const urls = results.map(r => r.url);
+        // const { data: existingReports } = await supabase
+        //     .from('research_reports')
+        //     .select('url')
+        //     .in('url', urls);
+        // const existingUrls = new Set(existingReports?.map(r => r.url) || []);
+        // const newResults = results.filter(r => !existingUrls.has(r.url));
 
-        const existingUrls = new Set(existingReports?.map(r => r.url) || []);
-        const newResults = results.filter(r => !existingUrls.has(r.url));
+        // Пока обрабатываем все результаты
+        const newResults = results;
 
-        console.log(`Found ${results.length} results, ${newResults.length} are new`);
-
-        if (newResults.length === 0) {
-            return { success: true, resultsCount: 0, message: "Все результаты уже в архиве" };
-        }
+        console.log(`Found ${results.length} results, processing all (idempotency disabled for debug)`);
 
         // 3. Формирование контента для анализа (только новые результаты)
         let fullTextForAnalysis = "";
