@@ -46,8 +46,27 @@ export function MatchingTable() {
         setIsLoading(false);
     };
 
+    const clearTableOnMount = async () => {
+        // Очищаем таблицу при загрузке компонента
+        // Старые данные остаются в research_reports (Архив)
+        console.log("🧹 Clearing matching_results table...");
+        const { error } = await supabase
+            .from('matching_results')
+            .delete()
+            .neq('id', 0); // Удаляет все записи
+
+        if (error) {
+            console.error("Failed to clear table:", error);
+        } else {
+            console.log("✅ Table cleared");
+        }
+    };
+
     useEffect(() => {
-        fetchMatches();
+        // При первом монтировании очищаем и затем подписываемся
+        clearTableOnMount().then(() => {
+            setMatches([]); // Сбрасываем локальный стейт
+        });
 
         const channel = supabase
             .channel('matching_updates')
