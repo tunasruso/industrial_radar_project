@@ -63,10 +63,13 @@ export function MatchingTable() {
     };
 
     useEffect(() => {
-        // При первом монтировании очищаем и затем подписываемся
-        clearTableOnMount().then(() => {
-            setMatches([]); // Сбрасываем локальный стейт
-        });
+        // Временно отключаем очистку для отладки
+        // clearTableOnMount().then(() => {
+        //     setMatches([]);
+        // });
+
+        // Вместо этого просто загружаем текущие данные
+        fetchMatches();
 
         const channel = supabase
             .channel('matching_updates')
@@ -74,10 +77,13 @@ export function MatchingTable() {
                 'postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'matching_results' },
                 (payload) => {
+                    console.log("MatchingTable: New item received via realtime:", payload.new);
                     setMatches((current) => [payload.new as MatchingItem, ...current].slice(0, 20));
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log("Realtime subscription status:", status);
+            });
 
         return () => {
             supabase.removeChannel(channel);
