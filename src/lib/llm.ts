@@ -1,6 +1,4 @@
-import { MatchResult } from './supabase';
-
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+// Removed unused import
 
 const SYSTEM_PROMPT = `
 Ты — ведущий технолог завода 'Лабораторные Технологии' (Laboratory Technologies).
@@ -24,10 +22,15 @@ export interface LLMScore {
 }
 
 export async function evaluateProduct(title: string, description: string): Promise<LLMScore> {
-    if (!OPENROUTER_API_KEY) {
-        console.warn("OPENROUTER_API_KEY missing, using fallback scoring");
+    // Доступ к ключу внутри функции (важно для Server Actions)
+    const apiKey = process.env.OPENROUTER_API_KEY;
+
+    if (!apiKey) {
+        console.warn("❌ OPENROUTER_API_KEY missing, using fallback scoring");
         return { score: 50, reason: "API Key missing", recommended_machine: "Unknown", complexity: "Medium" };
     }
+
+    console.log("✅ OpenRouter API Key found, calling LLM...");
 
     const prompt = `
     Товар: ${title}
@@ -52,7 +55,7 @@ export async function evaluateProduct(title: string, description: string): Promi
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+                "Authorization": `Bearer ${apiKey}`,
                 "Content-Type": "application/json",
                 // "HTTP-Referer": "https://labtechnologies.ru",
                 // "X-Title": "Industrial Radar"
