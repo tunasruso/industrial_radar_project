@@ -71,45 +71,51 @@ export async function runResearchAction(query: string) {
 
         console.log(`Saved ${newResults.length} NEW reports to research_reports`);
 
-        // 6. Генерация записи в Matching Results
-        if (aiEvaluation.score >= 50) { // Порог теперь ниже, так как AI строже
-            const productName = newResults[0].title.slice(0, 100);
+        // 6. Генерация записей в Matching Results для КАЖДОГО результата
+        if (aiEvaluation.score >= 50) {
+            let addedCount = 0;
 
-            // Проверка на дубликаты
-            const { data: existingMatch } = await supabase
-                .from('matching_results')
-                .select('id')
-                .eq('product_name', productName)
-                .single();
+            for (const res of newResults) {
+                const productName = res.title.slice(0, 100);
 
-            if (!existingMatch) {
-                const article = `TND-${Math.floor(Math.random() * 1000)}`;
-                // Цена теперь может зависеть от сложности (упрощенно)
-                const basePrice = 50000;
-                const multiplier = aiEvaluation.complexity === 'High' ? 5 : aiEvaluation.complexity === 'Medium' ? 2 : 1;
-                const price = Math.floor(basePrice * multiplier + Math.random() * 20000);
-
-                console.log("Attempting to insert into matching_results:", productName);
-
-                const { data, error } = await supabase
+                // Проверка на дубликаты
+                const { data: existingMatch } = await supabase
                     .from('matching_results')
-                    .insert({
-                        article: article,
-                        product_name: productName,
-                        confidence_score: aiEvaluation.score,
-                        estimated_cost: price,
-                        category: `R&D • ${aiEvaluation.recommended_machine}`,
-                        material: aiEvaluation.reason.slice(0, 50)
-                    });
+                    .select('id')
+                    .eq('product_name', productName)
+                    .single();
 
-                if (error) {
-                    console.error("❌ Failed to insert into matching_results:", error);
+                if (!existingMatch) {
+                    const article = `TND-${Math.floor(Math.random() * 1000)}`;
+                    const basePrice = 50000;
+                    const multiplier = aiEvaluation.complexity === 'High' ? 5 : aiEvaluation.complexity === 'Medium' ? 2 : 1;
+                    const price = Math.floor(basePrice * multiplier + Math.random() * 20000);
+
+                    console.log("Adding to matching_results:", productName);
+
+                    const { error } = await supabase
+                        .from('matching_results')
+                        .insert({
+                            article: article,
+                            product_name: productName,
+                            confidence_score: aiEvaluation.score,
+                            estimated_cost: price,
+                            category: `R&D • ${aiEvaluation.recommended_machine}`,
+                            material: aiEvaluation.reason.slice(0, 50)
+                        });
+
+                    if (error) {
+                        console.error("❌ Failed to insert:", productName, error);
+                    } else {
+                        addedCount++;
+                        console.log("✅ Added:", productName);
+                    }
                 } else {
-                    console.log("✅ Added to matching_results with AI score:", aiEvaluation.score);
+                    console.log("Skipping duplicate:", productName);
                 }
-            } else {
-                console.log("Skipping duplicate matching result for:", productName);
             }
+
+            console.log(`Added ${addedCount} items to matching_results`);
         }
 
         return { success: true, resultsCount: newResults.length };
