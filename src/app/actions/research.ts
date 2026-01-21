@@ -10,42 +10,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 const tavilyClient = tavily({ apiKey: process.env.TAVILY_API_KEY });
 
-// Простая эвристика возможностей производства
-function analyzeFeasibility(text: string): { verdict: string, score: number } {
-    const textLower = text.toLowerCase();
+import { evaluateProduct } from '@/lib/llm';
 
-    // 1. Риски
-    const forbiddenMaterials = ['titanium', 'титан', 'glass lined', 'эмалирован', 'эмаль', 'tantalum', 'тантал'];
-    for (const m of forbiddenMaterials) {
-        if (textLower.includes(m)) return {
-            verdict: `### ⚠️ Анализ производства: Требует проверки\n\n**Риски:** Найден сложный материал: ${m}.`,
-            score: 40
-        };
-    }
-
-    if (textLower.includes('high pressure') || textLower.includes('высокое давление') || textLower.includes('bar')) {
-        return {
-            verdict: '### ⚠️ Анализ производства: Высокое давление. Требует сертификации.',
-            score: 60
-        };
-    }
-
-    // 2. Позитивные сигналы
-    const positiveSignals = ['steel', 'сталь', '316', '304', 'ptfe', 'полипропилен', 'reactor', 'реактор'];
-    const foundPositives = positiveSignals.filter(s => textLower.includes(s));
-
-    if (foundPositives.length > 0) {
-        return {
-            verdict: `### ✅ Анализ производства: Подходит\n\n**Обоснование:** Найдены материалы/оборудование (${foundPositives.slice(0, 3).join(', ')}).`,
-            score: 95
-        };
-    }
-
-    return {
-        verdict: `### ℹ️ Анализ производства: Недостаточно данных\n\nТребуется запрос КД.`,
-        score: 75
-    };
-}
+// ... (keep headers)
 
 export async function runResearchAction(query: string) {
     try {
@@ -62,18 +29,24 @@ export async function runResearchAction(query: string) {
             return { success: false, message: "No results found" };
         }
 
-        // 2. Формирование контента (Markdown)
+        // 2. Формирование контента для анализа
         let fullTextForAnalysis = "";
         let content = `# Отчет по запросу: ${query}\n\n`;
 
         for (const res of results) {
             content += `### [${res.title}](${res.url})\n\n${res.content.slice(0, 800)}...\n\n---\n`;
-            fullTextForAnalysis += `${res.title} ${res.content} `;
+            fullTextForAnalysis += `${res.title}\n${res.content}\n\n`;
         }
 
-        // 3. Анализ (Эвристика)
-        const analysis = analyzeFeasibility(fullTextForAnalysis);
-        content += `\n\n---\n${analysis.verdict}`;
+        // 3. Анализ (AI Expert) - ЗАМЕНЯЕМ ЭВРИСТИКУ НА LLM
+        console.log("Calling LLM Expert...");
+        const aiEvaluation = await evaluateProduct(results[0].title, fullTextForAnalysis.slice(0, 2000));
+
+        content += `\n\n### 🧠 Вердикт AI Технолога\n`;
+        content += `**Оценка:** ${aiEvaluation.score}/100\n`;
+        content += `**Вердикт:** ${aiEvaluation.reason}\n`;
+        content += `**Реком. оборудование:** ${aiEvaluation.recommended_machine}\n`;
+        content += `**Сложность:** ${aiEvaluation.complexity}\n`;
 
         // 4. Сохранение отчета в research_reports
         const { error: rrError } = await supabase
@@ -87,9 +60,8 @@ export async function runResearchAction(query: string) {
 
         if (rrError) console.error("Research insert error:", rrError);
 
-        // 5. [NEW] Генерация записи в Matching Results
-        // Если оценка высокая, добавляем "найденный" продукт в фид
-        if (analysis.score >= 60) {
+        // 5. Генерация записи в Matching Results
+        if (aiEvaluation.score >= 50) { // Порог теперь ниже, так как AI строже
             const productName = results[0].title.slice(0, 100);
 
             // Проверка на дубликаты
@@ -101,19 +73,22 @@ export async function runResearchAction(query: string) {
 
             if (!existingMatch) {
                 const article = `TND-${Math.floor(Math.random() * 1000)}`;
-                const price = Math.floor(Math.random() * 500000) + 50000;
+                // Цена теперь может зависеть от сложности (упрощенно)
+                const basePrice = 50000;
+                const multiplier = aiEvaluation.complexity === 'High' ? 5 : aiEvaluation.complexity === 'Medium' ? 2 : 1;
+                const price = Math.floor(basePrice * multiplier + Math.random() * 20000);
 
                 await supabase
                     .from('matching_results')
                     .insert({
                         article: article,
                         product_name: productName,
-                        confidence_score: analysis.score,
-                        estimated_cost: price, // Фейковая цена для примера
-                        category: 'Tender / R&D',
-                        material: 'Unknown'
+                        confidence_score: aiEvaluation.score,
+                        estimated_cost: price,
+                        category: `R&D • ${aiEvaluation.recommended_machine}`,
+                        material: aiEvaluation.reason.slice(0, 50) // Сохраняем часть обоснования как материал/инфо
                     });
-                console.log("Added to matching_results");
+                console.log("Added to matching_results with AI score:", aiEvaluation.score);
             } else {
                 console.log("Skipping duplicate matching result for:", productName);
             }
