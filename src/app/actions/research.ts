@@ -29,36 +29,34 @@ export async function runResearchAction(query: string) {
             return { success: false, message: "No results found" };
         }
 
-        // 2. Формирование контента для анализа
+        // 2. Формирование контента для анализа и сохранение КАЖДОГО результата
         let fullTextForAnalysis = "";
-        let content = `# Отчет по запросу: ${query}\n\n`;
 
         for (const res of results) {
-            content += `### [${res.title}](${res.url})\n\n${res.content.slice(0, 800)}...\n\n---\n`;
             fullTextForAnalysis += `${res.title}\n${res.content}\n\n`;
         }
 
-        // 3. Анализ (AI Expert) - ЗАМЕНЯЕМ ЭВРИСТИКУ НА LLM
+        // 3. Анализ (AI Expert) - один раз для всего контента
         console.log("Calling LLM Expert...");
         const aiEvaluation = await evaluateProduct(results[0].title, fullTextForAnalysis.slice(0, 2000));
 
-        content += `\n\n### 🧠 Вердикт AI Технолога\n`;
-        content += `**Оценка:** ${aiEvaluation.score}/100\n`;
-        content += `**Вердикт:** ${aiEvaluation.reason}\n`;
-        content += `**Реком. оборудование:** ${aiEvaluation.recommended_machine}\n`;
-        content += `**Сложность:** ${aiEvaluation.complexity}\n`;
+        // 4. Сохранение КАЖДОГО результата как отдельного отчета в research_reports
+        for (const res of results) {
+            const content = `# ${res.title}\n\n**Запрос:** ${query}\n\n${res.content.slice(0, 1500)}...\n\n---\n\n### 🧠 Вердикт AI Технолога\n**Оценка:** ${aiEvaluation.score}/100\n**Вердикт:** ${aiEvaluation.reason}\n**Реком. оборудование:** ${aiEvaluation.recommended_machine}\n**Сложность:** ${aiEvaluation.complexity}`;
 
-        // 4. Сохранение отчета в research_reports
-        const { error: rrError } = await supabase
-            .from('research_reports')
-            .insert({
-                query: query,
-                title: results[0].title,
-                content: content,
-                url: results[0].url
-            });
+            const { error: rrError } = await supabase
+                .from('research_reports')
+                .insert({
+                    query: query,
+                    title: res.title.slice(0, 100),
+                    content: content,
+                    url: res.url
+                });
 
-        if (rrError) console.error("Research insert error:", rrError);
+            if (rrError) console.error("Research insert error:", rrError);
+        }
+
+        console.log(`Saved ${results.length} reports to research_reports`);
 
         // 5. Генерация записи в Matching Results
         if (aiEvaluation.score >= 50) { // Порог теперь ниже, так как AI строже
