@@ -47,9 +47,13 @@ export function RDInsights() {
 
     useEffect(() => {
         // При первом монтировании очищаем и затем подписываемся
-        clearTableOnMount().then(() => {
-            setReports([]); // Сбрасываем локальный стейт
-        });
+        const init = async () => {
+            setIsLoading(true);
+            await clearTableOnMount();
+            setReports([]);
+            setIsLoading(false);
+        };
+        init();
 
         // Подписка на обновления (Realtime)
         const channel = supabase
@@ -58,6 +62,7 @@ export function RDInsights() {
                 'postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'research_reports' },
                 (payload) => {
+                    console.log("RDInsights: New report received", payload.new);
                     setReports((current) => [payload.new as Report, ...current].slice(0, 10));
                 }
             )
