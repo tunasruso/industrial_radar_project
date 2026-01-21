@@ -76,10 +76,28 @@ export async function evaluateProduct(title: string, description: string): Promi
         const data = await response.json();
         const content = data.choices[0].message.content.trim();
 
-        // Cleanup markdown if present
-        const jsonStr = content.replace(/^```json/, '').replace(/```$/, '').trim();
+        // Cleanup markdown if present (handle various formats)
+        let jsonStr = content
+            .replace(/^```json\s*/i, '')
+            .replace(/^```\s*/i, '')
+            .replace(/```\s*$/i, '')
+            .trim();
 
-        return JSON.parse(jsonStr);
+        // Sometimes LLM wraps in extra text, try to extract JSON object
+        const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+            jsonStr = jsonMatch[0];
+        }
+
+        const parsed = JSON.parse(jsonStr);
+
+        // Validate and normalize the response
+        return {
+            score: typeof parsed.score === 'number' ? parsed.score : parseInt(parsed.score) || 50,
+            reason: typeof parsed.reason === 'string' ? parsed.reason : String(parsed.reason || 'Нет данных'),
+            recommended_machine: typeof parsed.recommended_machine === 'string' ? parsed.recommended_machine : 'None',
+            complexity: (['Low', 'Medium', 'High'].includes(parsed.complexity) ? parsed.complexity : 'Medium') as 'Low' | 'Medium' | 'High'
+        };
 
     } catch (error) {
         console.error("LLM Evaluation failed:", error);
