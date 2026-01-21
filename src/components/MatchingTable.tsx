@@ -91,22 +91,44 @@ export function MatchingTable() {
     }, []);
 
     const handleRowClick = async (item: MatchingItem) => {
-        // Очищаем строку поиска от спецсимволов, которые могут ломать ilike
-        const cleanName = item.product_name.replace(/[^\w\sа-яА-ЯёЁ.-]/gi, ' ').trim();
-        const searchTerm = cleanName.slice(0, 30); // Берем первые 30 чистых символов для надежности
+        console.log("MatchingTable click:", item.product_name);
 
-        const { data } = await supabase
+        // Пробуем найти по точному совпадению title
+        let { data } = await supabase
             .from('research_reports')
             .select('*')
-            .ilike('title', `%${searchTerm}%`)
+            .eq('title', item.product_name)
             .limit(1)
             .single();
 
+        // Если не нашли точное совпадение, ищем по части title
+        if (!data) {
+            const searchTerm = item.product_name.slice(0, 40);
+            const result = await supabase
+                .from('research_reports')
+                .select('*')
+                .ilike('title', `%${searchTerm}%`)
+                .limit(1)
+                .single();
+            data = result.data;
+        }
+
+        // Если всё ещё не нашли, ищем последний отчет
+        if (!data) {
+            const result = await supabase
+                .from('research_reports')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .single();
+            data = result.data;
+        }
+
         if (data) {
+            console.log("Found report:", data.title);
             setSelectedReport(data);
         } else {
-            // Явное уведомление для пользователя
-            alert(`Отчет для "${item.product_name.slice(0, 20)}..." не найден в базе R&D.\n\nВозможно, это старая запись или название слишком отличается.`);
+            alert(`Отчет для "${item.product_name.slice(0, 20)}..." не найден.`);
         }
     };
 
