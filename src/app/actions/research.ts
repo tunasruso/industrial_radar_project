@@ -29,19 +29,34 @@ export async function runResearchAction(query: string) {
             return { success: false, message: "No results found" };
         }
 
-        // 2. Формирование контента для анализа и сохранение КАЖДОГО результата
-        let fullTextForAnalysis = "";
+        // 2. IDEMPOTENCY CHECK: Фильтруем результаты, которые уже есть в архиве
+        const urls = results.map(r => r.url);
+        const { data: existingReports } = await supabase
+            .from('research_reports')
+            .select('url')
+            .in('url', urls);
 
-        for (const res of results) {
+        const existingUrls = new Set(existingReports?.map(r => r.url) || []);
+        const newResults = results.filter(r => !existingUrls.has(r.url));
+
+        console.log(`Found ${results.length} results, ${newResults.length} are new`);
+
+        if (newResults.length === 0) {
+            return { success: true, resultsCount: 0, message: "Все результаты уже в архиве" };
+        }
+
+        // 3. Формирование контента для анализа (только новые результаты)
+        let fullTextForAnalysis = "";
+        for (const res of newResults) {
             fullTextForAnalysis += `${res.title}\n${res.content}\n\n`;
         }
 
-        // 3. Анализ (AI Expert) - один раз для всего контента
+        // 4. Анализ (AI Expert) - один раз для всего контента
         console.log("Calling LLM Expert...");
-        const aiEvaluation = await evaluateProduct(results[0].title, fullTextForAnalysis.slice(0, 2000));
+        const aiEvaluation = await evaluateProduct(newResults[0].title, fullTextForAnalysis.slice(0, 2000));
 
-        // 4. Сохранение КАЖДОГО результата как отдельного отчета в research_reports
-        for (const res of results) {
+        // 5. Сохранение КАЖДОГО НОВОГО результата как отдельного отчета
+        for (const res of newResults) {
             const content = `# ${res.title}\n\n**Запрос:** ${query}\n\n${res.content.slice(0, 1500)}...\n\n---\n\n### 🧠 Вердикт AI Технолога\n**Оценка:** ${aiEvaluation.score}/100\n**Вердикт:** ${aiEvaluation.reason}\n**Реком. оборудование:** ${aiEvaluation.recommended_machine}\n**Сложность:** ${aiEvaluation.complexity}`;
 
             const { error: rrError } = await supabase
@@ -56,11 +71,11 @@ export async function runResearchAction(query: string) {
             if (rrError) console.error("Research insert error:", rrError);
         }
 
-        console.log(`Saved ${results.length} reports to research_reports`);
+        console.log(`Saved ${newResults.length} NEW reports to research_reports`);
 
-        // 5. Генерация записи в Matching Results
+        // 6. Генерация записи в Matching Results
         if (aiEvaluation.score >= 50) { // Порог теперь ниже, так как AI строже
-            const productName = results[0].title.slice(0, 100);
+            const productName = newResults[0].title.slice(0, 100);
 
             // Проверка на дубликаты
             const { data: existingMatch } = await supabase
@@ -92,7 +107,7 @@ export async function runResearchAction(query: string) {
             }
         }
 
-        return { success: true, resultsCount: results.length };
+        return { success: true, resultsCount: newResults.length };
 
     } catch (error) {
         console.error("Research action error:", error);
