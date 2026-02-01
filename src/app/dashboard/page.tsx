@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { GlassCard } from '@/components/GlassCard';
 import { MachineCard, Machine } from '@/components/MachineCard';
@@ -10,18 +10,6 @@ import { RDInsights } from '@/components/RDInsights';
 import { Activity, Factory, TrendingUp, Beaker, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { runResearchAction } from '@/app/actions/research';
 import { motion, AnimatePresence } from 'framer-motion';
-
-// Factory data from factory_specs.csv
-const machines: Machine[] = [
-    { Machine_Name: 'Lasermann LSS 1325', Type: 'Laser_Cutter', Materials: 'Steel, Aluminum, Wood', Max_Pressure_MPa: 0, Hourly_Rate_RUB: 1000, Status: 'IDLE_PRIORITY' },
-    { Machine_Name: 'UVGS-TFS-3008 (U07)', Type: 'Engraver/CNC', Materials: 'Metal, Polymers, Wood', Max_Pressure_MPa: 0, Hourly_Rate_RUB: 1000, Status: 'IDLE_PRIORITY' },
-    { Machine_Name: 'Laser Marker (U19)', Type: 'Engraver', Materials: 'Metal, Polymers', Max_Pressure_MPa: 0, Hourly_Rate_RUB: 1000, Status: 'IDLE_PRIORITY' },
-    { Machine_Name: 'DM-12NT-CVD-150', Type: 'Electric_Oven', Materials: 'Glass, Metal', Max_Pressure_MPa: 0, Hourly_Rate_RUB: 1000, Status: 'IDLE_PRIORITY' },
-    { Machine_Name: 'Laser Welding (U02)', Type: 'Welder', Materials: 'Stainless Steel', Max_Pressure_MPa: 15, Hourly_Rate_RUB: 1000, Status: 'IDLE_NO_STAFF' },
-    { Machine_Name: 'Silicon Coating', Type: 'Coating', Materials: 'Labware, Metal', Max_Pressure_MPa: 15, Hourly_Rate_RUB: 1000, Status: 'ACTIVE' },
-    { Machine_Name: 'Universal Milling', Type: 'Milling', Materials: '316L, 12X18H10T', Max_Pressure_MPa: 15, Hourly_Rate_RUB: 1000, Status: 'ACTIVE' },
-    { Machine_Name: 'Lathes (U09/U10)', Type: 'Turning', Materials: '316L, 12X18H10T', Max_Pressure_MPa: 15, Hourly_Rate_RUB: 1000, Status: 'ACTIVE' },
-];
 
 const stats = [
     { label: 'Станков всего', value: 16, icon: Factory, color: 'text-cyan-400' },
@@ -50,6 +38,21 @@ const CATALOG_QUERIES = [
     "Bürkle Zone Sampler manual"
 ];
 
+const COMPETITOR_QUERIES = [
+    "Экросхим лабораторная мебель каталог цены",
+    "Прайс лист лабораторное оборудование 2024",
+    "Тендеры на поставку реакторов цены конкурентов",
+    "Производители лабораторной посуды Россия список",
+    "Сравнение цен на сушильные шкафы SNOL",
+    "manufacturers of laboratory reactors Russia",
+    "suppliers of stainless steel chemical vessels",
+    "производители лабораторных реакторов Россия",
+    "конкуренты IKA, Thermo Fisher в России",
+    "заводы по производству химического оборудования",
+    "industrial mixers manufacturers europe",
+    "поставщики автоклавов промышленных"
+];
+
 interface SearchStatus {
     status: 'idle' | 'searching' | 'success' | 'error';
     query?: string;
@@ -62,32 +65,64 @@ interface SearchProgress {
 }
 
 export default function DashboardPage() {
+    const [machines, setMachines] = useState<Machine[]>([]);
     const [isScanning, setIsScanning] = useState(false);
     const [searchStatus, setSearchStatus] = useState<SearchStatus>({ status: 'idle' });
     const [searchProgress, setSearchProgress] = useState<SearchProgress | undefined>(undefined);
 
-    const handleScan = async (mode: 'tender' | 'catalog', count: number) => {
+    // Fetch machines on mount
+    useEffect(() => {
+        const fetchMachines = async () => {
+            try {
+                const res = await fetch('/api/machines');
+                const data = await res.json();
+                if (Array.isArray(data)) {
+                    const mapped = data.map((m: any) => ({
+                        Machine_Name: m.name,
+                        Type: m.type,
+                        Materials: m.materials,
+                        Max_Pressure_MPa: m.max_pressure || m.maxPressure || 0,
+                        Hourly_Rate_RUB: m.hourly_rate || m.hourlyRate || 0,
+                        Status: m.status
+                    }));
+                    setMachines(mapped);
+                }
+            } catch (e) {
+                console.error("Failed to fetch machines", e);
+            }
+        };
+        fetchMachines();
+    }, []);
+
+    const handleScan = async (mode: 'tender' | 'catalog' | 'competitor', count: number, country: string = 'Russia') => {
         if (isScanning) return;
         setIsScanning(true);
         setSearchProgress({ current: 0, total: count });
 
-        const queries = mode === 'tender' ? TENDER_QUERIES : CATALOG_QUERIES;
+        let queries = TENDER_QUERIES;
+        if (mode === 'catalog') queries = CATALOG_QUERIES;
+        if (mode === 'competitor') queries = COMPETITOR_QUERIES;
+
         let totalNewResults = 0;
         let completedSearches = 0;
+        let foundCompetitors: string[] = [];
 
         try {
             for (let i = 0; i < count; i++) {
                 const randomQuery = queries[Math.floor(Math.random() * queries.length)];
                 setSearchProgress({ current: i + 1, total: count });
-                setSearchStatus({ status: 'searching', query: randomQuery });
+                setSearchStatus({ status: 'searching', query: `${randomQuery} (${country})` });
 
-                console.log(`Scanning ${i + 1}/${count}: ${randomQuery}`);
+                console.log(`Scanning ${i + 1}/${count}: ${randomQuery} [${mode}, ${country}]`);
 
                 try {
-                    const result = await runResearchAction(randomQuery);
+                    const result = await runResearchAction(randomQuery, mode, country);
                     if (result.success) {
                         totalNewResults += result.resultsCount || 0;
                         completedSearches++;
+                        if (result.newCompetitors) {
+                            foundCompetitors.push(...result.newCompetitors);
+                        }
                     }
                 } catch (e) {
                     console.error(`Error on search ${i + 1}:`, e);
@@ -99,9 +134,15 @@ export default function DashboardPage() {
                 }
             }
 
+            let message = `Завершено ${completedSearches}/${count} запросов. Новых результатов: ${totalNewResults}`;
+            if (foundCompetitors.length > 0) {
+                const uniqueNames = Array.from(new Set(foundCompetitors));
+                message = `Найдены конкуренты: ${uniqueNames.join(', ')}`;
+            }
+
             setSearchStatus({
                 status: 'success',
-                message: `Завершено ${completedSearches}/${count} запросов. Новых результатов: ${totalNewResults}`
+                message: message
             });
         } catch (e) {
             console.error(e);
@@ -109,12 +150,12 @@ export default function DashboardPage() {
         } finally {
             setIsScanning(false);
             setSearchProgress(undefined);
-            // Автоскрытие через 5 секунд
-            setTimeout(() => setSearchStatus({ status: 'idle' }), 5000);
+            // Автоскрытие через 10 секунд для успеха
+            setTimeout(() => setSearchStatus({ status: 'idle' }), 10000);
         }
     };
 
-    const idleMachines = machines.filter(m => m.Status.includes('IDLE'));
+    const idleMachines = machines.filter(m => m.Status === 'IDLE_PRIORITY' || m.Status === 'IDLE_NO_STAFF');
     const activeMachines = machines.filter(m => m.Status === 'ACTIVE');
 
     return (

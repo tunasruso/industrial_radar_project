@@ -1,13 +1,13 @@
 'use client';
 
-import { Radar, PlayCircle, Settings, Database, Loader2, BookOpen, Search, Hash } from 'lucide-react';
+import { Radar, PlayCircle, Settings, Database, Loader2, BookOpen, Search, Hash, Globe, Camera, Bot } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState } from 'react';
 
 interface HeaderProps {
-    onScan: (mode: 'tender' | 'catalog', count: number) => void;
+    onScan: (mode: 'tender' | 'catalog' | 'competitor', count: number, country: string) => void;
     isScanning: boolean;
     currentProgress?: { current: number; total: number };
 }
@@ -24,7 +24,7 @@ export function Header({ onScan, isScanning, currentProgress }: HeaderProps) {
     const pathname = usePathname();
     const isArchive = pathname === '/dashboard/archive';
     const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]);
-    const [scanMode, setScanMode] = useState<'tender' | 'catalog'>('tender');
+    const [scanMode, setScanMode] = useState<'tender' | 'catalog' | 'competitor'>('tender');
     const [searchCount, setSearchCount] = useState(5);
 
     return (
@@ -46,7 +46,62 @@ export function Header({ onScan, isScanning, currentProgress }: HeaderProps) {
                 </Link>
 
                 {/* Navigation & Actions */}
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 flex-wrap justify-end flex-1 ml-4">
+
+                    {/* Machines Link */}
+                    <Link
+                        href="/dashboard/machines"
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${pathname === '/dashboard/machines' ? 'bg-white/10 text-white' : 'text-white/40 hover:text-white'}`}
+                    >
+                        <Settings className="w-4 h-4" />
+                        Станки
+                    </Link>
+
+
+                    {/* Assistant Link */}
+                    <Link
+                        href="/dashboard/assistant"
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${pathname === '/dashboard/assistant' ? 'bg-purple-500/20 text-purple-400' : 'text-white/40 hover:text-white'}`}
+                    >
+                        <Bot className="w-4 h-4" />
+                        Ассистент
+                    </Link>
+
+                    {/* Competitors Link */}
+                    <Link
+                        href="/dashboard/competitors"
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${pathname?.startsWith('/dashboard/competitors') ? 'bg-amber-500/20 text-amber-400' : 'text-white/40 hover:text-white'}`}
+                    >
+                        <Globe className="w-4 h-4" />
+                        Конкуренты
+                    </Link>
+
+                    {/* Price List Link */}
+                    <Link
+                        href="/dashboard/price-list"
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${pathname === '/dashboard/price-list' ? 'bg-green-500/20 text-green-400' : 'text-white/40 hover:text-white'}`}
+                    >
+                        📋
+                        Прайс
+                    </Link>
+
+                    {/* Price Report Link */}
+                    <Link
+                        href="/dashboard/price-report"
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${pathname === '/dashboard/price-report' ? 'bg-purple-500/20 text-purple-400' : 'text-white/40 hover:text-white'}`}
+                    >
+                        📊
+                        Сравнение
+                    </Link>
+
+                    {/* Visual Match Link */}
+                    <Link
+                        href="/dashboard/visual-search"
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${pathname === '/dashboard/visual-search' ? 'bg-pink-500/20 text-pink-400' : 'text-white/40 hover:text-white'}`}
+                    >
+                        <Camera className="w-4 h-4" />
+                        Visual Match
+                    </Link>
 
                     {/* Mode Selector */}
                     {!isArchive && (
@@ -66,6 +121,14 @@ export function Header({ onScan, isScanning, currentProgress }: HeaderProps) {
                             >
                                 <BookOpen className="w-4 h-4" />
                                 Каталоги
+                            </button>
+                            <button
+                                onClick={() => setScanMode('competitor')}
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm transition-all ${scanMode === 'competitor' ? 'bg-amber-500/20 text-amber-400' : 'text-white/40 hover:text-white'
+                                    }`}
+                            >
+                                <Globe className="w-4 h-4" />
+                                Конкуренты
                             </button>
                         </div>
                     )}
@@ -118,7 +181,7 @@ export function Header({ onScan, isScanning, currentProgress }: HeaderProps) {
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                onClick={() => onScan(scanMode, searchCount)}
+                                onClick={() => onScan(scanMode, searchCount, selectedCountry.text)}
                                 disabled={isScanning}
                                 className={`
                     flex items-center gap-2 px-5 py-2.5 rounded-xl font-medium
@@ -127,14 +190,18 @@ export function Header({ onScan, isScanning, currentProgress }: HeaderProps) {
                                         ? 'bg-white/10 text-white/50 cursor-wait'
                                         : scanMode === 'tender'
                                             ? 'bg-cyan-500 text-black hover:bg-cyan-400'
-                                            : 'bg-purple-500 text-white hover:bg-purple-400'
+                                            : scanMode === 'competitor'
+                                                ? 'bg-amber-500 text-black hover:bg-amber-400'
+                                                : 'bg-purple-500 text-white hover:bg-purple-400'
                                     }
                   `}
                             >
                                 {isScanning ? <Loader2 className="w-5 h-5 animate-spin" /> : <PlayCircle className="w-5 h-5" />}
                                 {isScanning && currentProgress
                                     ? `${currentProgress.current}/${currentProgress.total}`
-                                    : scanMode === 'tender' ? 'Найти тендеры' : 'Сканировать Каталог'}
+                                    : scanMode === 'tender' ? 'Найти тендеры'
+                                        : scanMode === 'catalog' ? 'Сканировать Каталог'
+                                            : 'Поиск Конкурентов'}
                             </motion.button>
                         </>
                     )}

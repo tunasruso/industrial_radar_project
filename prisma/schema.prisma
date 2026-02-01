@@ -16,3 +16,15 @@ model MatchResult {
   material        String
   createdAt       DateTime @default(now())
 }
+
+model Machine {
+  id          Int      @id @default(autoincrement())
+  name        String
+  type        String
+  materials   String
+  maxPressure Float?
+  hourlyRate  Int?
+  status      String   @default("IDLE") // IDLE, ACTIVE, MAINTENANCE
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}

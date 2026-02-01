@@ -9,19 +9,28 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^3.0.23",
+    "@ai-sdk/react": "^3.0.66",
+    "@mendable/firecrawl-js": "^4.12.0",
     "@prisma/client": "^7.2.0",
     "@supabase/supabase-js": "^2.90.1",
     "@tavily/core": "^0.7.1",
+    "ai": "^6.0.64",
     "clsx": "^2.1.1",
     "framer-motion": "^12.27.2",
+    "html2canvas": "^1.4.1",
+    "jspdf": "^4.0.0",
     "lucide-react": "^0.562.0",
+    "mammoth": "^1.11.0",
     "next": "16.1.4",
     "papaparse": "^5.5.3",
     "prisma": "^7.2.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "recharts": "^3.7.0",
     "tailwind-merge": "^3.4.0",
-    "xlsx": "^0.18.5"
+    "xlsx": "^0.18.5",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
